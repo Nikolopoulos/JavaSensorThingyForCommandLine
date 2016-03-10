@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import sensorPlatforms.MicazMote;
 import util.Control;
+import static java.lang.Thread.sleep;
 
 /**
  *

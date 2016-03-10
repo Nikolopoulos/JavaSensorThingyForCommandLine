@@ -5,6 +5,9 @@
  */
 package sensorPlatforms;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 /**
  *
  * @author pi
@@ -13,16 +16,31 @@ public class Service {
     private String name;
     private String description;
     private String URI; //URI is "/thething"
+    private HashMap<String,AssociatedHardware> hw;
     
     private String units;
     private String decimalValue;
+
+    
+    
 
     public Service(String name, String description, String URI, String units) {
         this.name = name;
         this.description = description;
         this.URI = URI;
         this.units = units;
+        this.hw = new HashMap<String,AssociatedHardware>();
     }
+
+    public HashMap<String, AssociatedHardware> getHw() {
+        return hw;
+    }
+
+    public void setHw(HashMap<String, AssociatedHardware> hw) {
+        this.hw = hw;
+    }
+    
+    
 
     public String getName() {
         return name;

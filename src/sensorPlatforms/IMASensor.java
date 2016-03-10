@@ -16,9 +16,15 @@ public class IMASensor {
     private long latestActivity;
     private ArrayList<Service> services;
 
-    public IMASensor(int id, long latestActivity) {
+    public IMASensor(int id) {
         this.id = id;
-        this.latestActivity = latestActivity;
+        this.latestActivity = System.currentTimeMillis();
+        this.services = new ArrayList<Service>();
+    }
+    
+    public IMASensor(String id) {
+        this.id = Integer.parseInt(id);
+        this.latestActivity = System.currentTimeMillis();
         this.services = new ArrayList<Service>();
     }
 

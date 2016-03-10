@@ -11,6 +11,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import sensorPlatforms.AssociatedHardware;
+import sensorPlatforms.IMASensor;
+import sensorPlatforms.Service;
 import util.Control;
 
 /**
@@ -46,7 +49,7 @@ public class Messaging {
                                 if (s.charAt(0) != '#') {
                                     parseString(s);
                                     System.out.println(s);
-                                            
+
                                 }
                                 s = br.readLine();
                             } catch (IOException ex) {
@@ -60,13 +63,59 @@ public class Messaging {
                 }
             }
         });
-        
+
         return t;
 
     }
-    
-    public void parseString(String s){
-    
+
+    public void parseString(String s) {
+        IMASensor dealer = null;
+        if (s.startsWith("TH")) {
+            String parts[] = s.split(" ");
+            String id = parts[1];
+            String Temperature = parts[2];
+            String Humdity = parts[3];
+            String Pressure = parts[4];
+            dealer = new IMASensor(id);
+
+            Service temperature = new Service("Temperature", "Provides the temperature in some units or something", "/temperature", "Kelvious");
+            temperature.setDecimalValue(Temperature);
+            Service humidity = new Service("Humidity", "Provides the humidity in some units or something", "/humidity", "MistUnits");
+            humidity.setDecimalValue(Humdity);
+            Service pressure = new Service("Pressure", "Provides the atmospheric pressure in some units or something", "/pressure", "Easters");
+            pressure.setDecimalValue(Pressure);
+
+            dealer.getServices().add(temperature);
+            dealer.getServices().add(humidity);
+            dealer.getServices().add(pressure);
+        } else if (s.startsWith("BLE")) {
+            String parts[] = s.split(" ");
+            String SensorID = parts[1];
+            String tagID = parts[2].split(",")[0];
+            String powerParts[] = s.split(",");
+            String power = powerParts[powerParts.length - 1];
+            
+            dealer = new IMASensor(SensorID);   
+            
+            Service tagReading = new Service("Bluetooth Tag Finder", "Provides data for bluetooth hardware", "/bluetooth", "Watt?");
+            tagReading.setDecimalValue(power);
+            tagReading.getHw().put(tagID, new AssociatedHardware(tagID));
+
+            dealer.getServices().add(tagReading);
+        } else if (s.startsWith("CO")) {
+            String parts[] = s.split(" ");
+            String id = parts[1];
+            String COLevel = parts[2];
+            
+            dealer = new IMASensor(id);   
+            
+            Service service = new Service("CO levels", "Provides data for CO levels", "/COLevels", "COppm?");
+            service.setDecimalValue(COLevel);
+            
+            dealer.getServices().add(service);
+        }
+        
+        c.reportReadingOfSensor(dealer);
     }
 
 }

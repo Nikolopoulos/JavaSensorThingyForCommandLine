@@ -39,7 +39,7 @@ public class Control {
     public final Core HTTPCore;
     public final Core sensingCore;
     public final Core cronCore;
-    public  InetAddress addr = null;// = getFirstNonLoopbackAddress(true, false);
+    public InetAddress addr = null;// = getFirstNonLoopbackAddress(true, false);
     public final String ip;// = addr.getHostAddress();
     public final String registryUnitIP;// = "127.0.0.1";
     public final int registryPort;// = 8383;
@@ -160,15 +160,14 @@ public class Control {
                             String services = "{\"services\":[";
 
                             services += "{\"uri\" : \"/sensor/" + m.getId() + "\", \"description\" : \"returns data of specific sensor with id  " + m.getId() + "\"}";
-                            for(Service s : m.getServices())
-                            {
-                                services += ",{\"uri\" : \"/sensor/" + m.getId() + s.getURI()+"\", \"description\" : \""+s.getDescription()+"  " + m.getId() + "\"}";
-                            }                            
+                            for (Service s : m.getServices()) {
+                                services += ",{\"uri\" : \"/sensor/" + m.getId() + s.getURI() + "\", \"description\" : \"" + s.getDescription() + "  " + m.getId() + "\"}";
+                            }
                             services += "]}";
                             if (debug) {
                                 System.out.println("My uid at update is " + uid);
                             }
-                            String jsonReply = HTTPRequest.sendPost("http://"+registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/delete");
+                            String jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/delete");
                             if (debug) {
                                 System.out.println("reply is: " + jsonReply);
                             }
@@ -183,7 +182,7 @@ public class Control {
                     }
                     toRemove.clear();
                     if (debug) {
-                        System.out.println("CurrentTime " + Util.getTime());
+                        //System.out.println("CurrentTime " + Util.getTime());
                     }
                     try {
                         Thread.sleep(2000);
@@ -196,7 +195,7 @@ public class Control {
         return t;
     }
 
-    public void reportPollAck(final IMASensor sensor) {
+    public void reportReadingOfSensor(final IMASensor sensor) {
         Thread t = new Thread(new Runnable() {
 
             @Override
@@ -205,8 +204,10 @@ public class Control {
                     sensingCore.attachTo();
 
                     boolean found = false;
+                    IMASensor foundSensor = null;
                     for (IMASensor m : sensorsList) {
                         if (m.getId() == sensor.getId()) {
+                            foundSensor = m;
                             m.setLatestActivity(Util.getTime());
                             found = true;
                             break;
@@ -219,16 +220,15 @@ public class Control {
                             try {
                                 String services = "{\"services\":[";
 
-                            services += "{\"uri\" : \"/sensor/" + sensor.getId() + "\", \"description\" : \"returns data of specific sensor with id  " + sensor.getId() + "\"}";
-                            for(Service s : sensor.getServices())
-                            {
-                                services += ",{\"uri\" : \"/sensor/" + sensor.getId() + s.getURI()+"\", \"description\" : \""+s.getDescription()+"  " + sensor.getId() + "\"}";
-                            }                            
-                            services += "]}";
+                                services += "{\"uri\" : \"/sensor/" + sensor.getId() + "\", \"description\" : \"returns data of specific sensor with id  " + sensor.getId() + "\"}";
+                                for (Service s : sensor.getServices()) {
+                                    services += ",{\"uri\" : \"/sensor/" + sensor.getId() + s.getURI() + "\", \"description\" : \"" + s.getDescription() + "  " + sensor.getId() + "\"}";
+                                }
+                                services += "]}";
                                 if (debug) {
                                     System.out.println("My uid at update is " + uid);
                                 }
-                                jsonReply = HTTPRequest.sendPost("http://"+registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/update");
+                                jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/update");
                                 if (debug) {
                                     System.out.println("reply is: " + jsonReply);
                                 }
@@ -240,6 +240,8 @@ public class Control {
                             }
                         }
 
+                    } else {
+                        for(Service s : foundSensor.getServices()){}
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
@@ -248,8 +250,6 @@ public class Control {
         });
         t.start();
     }
-
-    
 
     private Thread constructPollDaemon() {
         Thread t = new Thread(new Runnable() {
@@ -261,10 +261,8 @@ public class Control {
                 } catch (Exception ex) {
                     Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                while (true) {
-                    Thread serial = messages.ReadSerial();
-                    serial.start();                    
-                }
+                Thread serial = messages.ReadSerial();
+                serial.start();
             }
         });
         return t;
