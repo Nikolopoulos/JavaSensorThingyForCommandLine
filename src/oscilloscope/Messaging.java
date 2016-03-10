@@ -98,8 +98,9 @@ public class Messaging {
             dealer = new IMASensor(SensorID);   
             
             Service tagReading = new Service("Bluetooth Tag Finder", "Provides data for bluetooth hardware", "/bluetooth", "Watt?");
-            tagReading.setDecimalValue(power);
-            tagReading.getHw().put(tagID, new AssociatedHardware(tagID));
+            tagReading.setDecimalValue(tagID +" "+power);
+            tagReading.getHw().put(tagID, new AssociatedHardware(tagID,power));
+            
 
             dealer.getServices().add(tagReading);
         } else if (s.startsWith("CO")) {

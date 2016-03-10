@@ -241,7 +241,20 @@ public class Control {
                         }
 
                     } else {
-                        for(Service s : foundSensor.getServices()){}
+                        for(Service s : foundSensor.getServices()){
+                            boolean foundService=false;
+                            for(Service ser : sensor.getServices()){
+                                if(ser.getName().contentEquals(s.getName())){
+                                    foundService = true;
+                                    s.setDecimalValue(ser.getDecimalValue());
+                                    if(ser.getName().contains("Bluetooth")){
+                                        if(s.getHw().containsKey(ser.getDecimalValue().split(" ")[0])){
+                                            s.getHw().put(ser, value)
+                                        }//add to hashmap the tag read
+                                    }
+                                }
+                            }
+                        }
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);

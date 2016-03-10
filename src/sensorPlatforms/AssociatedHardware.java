@@ -11,10 +11,26 @@ package sensorPlatforms;
  */
 public class AssociatedHardware {
     String id;
+    String reading;
 
     public AssociatedHardware(String id) {
         this.id = id;
     }
+    
+    public AssociatedHardware(String id,String reading) {
+        this.id = id;
+        this.reading = reading;
+    }
+
+    public String getReading() {
+        return reading;
+    }
+
+    public void setReading(String reading) {
+        this.reading = reading;
+    }
+    
+    
 
     public String getId() {
         return id;
