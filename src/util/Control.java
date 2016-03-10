@@ -249,40 +249,7 @@ public class Control {
         t.start();
     }
 
-    public void reportReading(final int id, final String message) {
-        Thread t = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    sensingCore.attachTo();
-
-                    for (MicazMote m : motesList) {
-                        if (m.getId() == id) {
-                            switch (messageType) {
-                                case lib.Constants.TEMP: {
-                                    m.setTempReading(Util.median(Readings));
-                                    break;
-                                }
-                                case lib.Constants.PHOTO: {
-                                    m.setPhotoReading(Util.median(Readings));
-                                    break;
-                                }
-                                default: {
-                                    break;
-                                }
-
-                            }
-
-                        }
-                    }
-                } catch (Exception ex) {
-                    Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        });
-        t.start();
-    }
+    
 
     private Thread constructPollDaemon() {
         Thread t = new Thread(new Runnable() {
@@ -295,19 +262,15 @@ public class Control {
                     Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 while (true) {
-                    sendPoll();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
+                    Thread serial = messages.ReadSerial();
+                    serial.start();                    
                 }
             }
         });
         return t;
     }
 
-    public ArrayList<MicazMote> getMotesList() {
+    public ArrayList<IMASensor> getMotesList() {
         return this.sensorsList;
     }
 
