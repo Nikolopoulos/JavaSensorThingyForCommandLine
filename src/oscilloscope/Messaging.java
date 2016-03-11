@@ -32,10 +32,13 @@ public class Messaging {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
+                CommPortIdentifier portIdentifier;
+                SerialPort serialPort=null;
+
                 while (true) {
                     try {
-                        CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier("/dev/ttyUSB0"); //on unix based system
-                        SerialPort serialPort = (SerialPort) portIdentifier.open("NameOfConnection-whatever", 0);
+                        portIdentifier = CommPortIdentifier.getPortIdentifier("/dev/ttyUSB0"); //on unix based system
+                        serialPort = (SerialPort) portIdentifier.open("NameOfConnection-whatever", 0);
 
                         serialPort.setSerialPortParams(
                                 115200, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
@@ -48,7 +51,7 @@ public class Messaging {
                             try {
                                 if (s.charAt(0) != '#') {
                                     parseString(s);
-                                    System.out.println(s);
+                                    //System.out.println(s);
 
                                 }
                                 s = br.readLine();
@@ -58,6 +61,7 @@ public class Messaging {
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
+                        serialPort.close();
                     }
 
                 }
@@ -94,28 +98,27 @@ public class Messaging {
             String tagID = parts[2].split(",")[0];
             String powerParts[] = s.split(",");
             String power = powerParts[powerParts.length - 1];
-            
-            dealer = new IMASensor(SensorID);   
-            
+
+            dealer = new IMASensor(SensorID);
+
             Service tagReading = new Service("Bluetooth Tag Finder", "Provides data for bluetooth hardware", "/bluetooth", "Watt?");
-            tagReading.setDecimalValue(tagID +" "+power);
-            tagReading.getHw().put(tagID, new AssociatedHardware(tagID,power));
-            
+            tagReading.setDecimalValue(tagID + " " + power);
+            tagReading.getHw().put(tagID, new AssociatedHardware(tagID, power));
 
             dealer.getServices().add(tagReading);
         } else if (s.startsWith("CO")) {
             String parts[] = s.split(" ");
             String id = parts[1];
             String COLevel = parts[2];
-            
-            dealer = new IMASensor(id);   
-            
+
+            dealer = new IMASensor(id);
+
             Service service = new Service("CO levels", "Provides data for CO levels", "/COLevels", "COppm?");
             service.setDecimalValue(COLevel);
-            
+
             dealer.getServices().add(service);
         }
-        
+
         c.reportReadingOfSensor(dealer);
     }
 

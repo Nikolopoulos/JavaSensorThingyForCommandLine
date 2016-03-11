@@ -8,13 +8,13 @@ package webServer;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import static java.lang.Thread.sleep;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import sensorPlatforms.MicazMote;
 import util.Control;
 import static java.lang.Thread.sleep;
+import sensorPlatforms.IMASensor;
 
 /**
  *
@@ -50,55 +50,42 @@ class DoComms implements Runnable {
                 if (lineNumber == 1) {
                     String[] parts = line.split(" ");
                     requestedURL = parts[1];
+                    System.out.println("REQURL IS " + requestedURL);
                 }
                 input = input + line + "\n";
                 noBreakInput = noBreakInput + line;
                 lineNumber++;
             }
             String reply = "";
+            for (String part : requestedURL.split("/")) {
+                System.out.println(part + " " + requestedURL.split("/").length);
+            }
             if (requestedURL.equals("/")) {
-                reply = "127.0.0.1:8181/sensors -> returns a list of sensors available\n"
-                        + "127.0.0.1:8181/sensor/ID -> returns data of specific sensor with id = ID\n"
-                        + "127.0.0.1:8181/sensor/ID/light|temp -> returns data about light|temperature of specific sensor with id = ID\n"
-                        + "127.0.0.1:8181/sensor/ID/switch toggles the switch available on the sensor node and returns the state of the sensor node as if 127.0.0.1:8181/sensor/ID was called";
+                reply = con.ip + ":" + con.myPort + "/sensors -> returns a list of sensors available\n"
+                        + con.ip + ":" + con.myPort + "/sensor/ID -> returns data of specific sensor with id = ID\n"
+                        + con.ip + ":" + con.myPort + "/sensor/ID/light|temp -> returns data about light|temperature of specific sensor with id = ID\n"
+                        + con.ip + ":" + con.myPort + "/sensor/ID/switch toggles the switch available on the sensor node and returns the state of the sensor node as if 127.0.0.1:8181/sensor/ID was called";
             } else if (requestedURL.startsWith("/sensors")) {
                 reply = "{\"sensors\":{[";
-                for (MicazMote m : con.getMotesList()) {
+                for (IMASensor m : con.getMotesList()) {
                     reply += m.JSONDescription() + ",";
                 }
                 if (reply.length() > 10) {
                     reply = reply.substring(0, reply.length() - 1);
                 }
                 reply += "]}";
-            } else if (requestedURL.startsWith("/sensor/") && (!requestedURL.contains("light")) && (!requestedURL.contains("temp")) && (!requestedURL.contains("switch"))) {
-                if (requestedURL.length() < 9) {
-                    reply = "127.0.0.1:8181/sensors -> returns a list of sensors available\n"
-                            + "127.0.0.1:8181/sensor/ID -> returns data of specific sensor with id = ID\n"
-                            + "127.0.0.1:8181/sensor/ID/light|temp -> returns data about light|temperature of specific sensor with id = ID\n"
-                            + "127.0.0.1:8181/sensor/ID/switch toggles the switch available on the sensor node and returns the state of the sensor node as if 127.0.0.1:8181/sensor/ID was called";
+
+            } else if (requestedURL.startsWith("/sensor/") && requestedURL.split("/").length < 4) {
+                if (requestedURL.split("/").length < 3) {
+                    reply = con.ip + ":" + con.myPort + "/sensors -> returns a list of sensors available\n"
+                            + con.ip + ":" + con.myPort + "/sensor/ID -> returns data of specific sensor with id = ID\n"
+                            + con.ip + ":" + con.myPort + "/sensor/ID/light|temp -> returns data about light|temperature of specific sensor with id = ID\n"
+                            + con.ip + ":" + con.myPort + "/sensor/ID/switch toggles the switch available on the sensor node and returns the state of the sensor node as if 127.0.0.1:8181/sensor/ID was called";
 
                 } else {
                     int ID = Integer.parseInt(requestedURL.split("/")[2]);
-                    con.sendReadingRequest(ID, lib.Constants.TEMP);
-                    try {
-                        sleep(1000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    con.sendReadingRequest(ID, lib.Constants.PHOTO);
-                    try {
-                        sleep(1000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    con.getSwitchInfo(ID);
-                    try {
-                        sleep(1000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
-                    }
                     reply = "{\"sensor\":{";
-                    for (MicazMote m : con.getMotesList()) {
+                    for (IMASensor m : con.getMotesList()) {
                         if (m.getId() == ID) {
                             reply += m.JSONObject();
                         }
@@ -106,55 +93,19 @@ class DoComms implements Runnable {
                     reply += "}}";
                 }
 
-            } else if (requestedURL.startsWith("/sensor/") && (requestedURL.contains("light"))) {
-                int ID = Integer.parseInt(requestedURL.substring(8, requestedURL.indexOf("/", 9)));
-                con.sendReadingRequest(ID, lib.Constants.PHOTO);
-                try {
-                    sleep(1000);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            } else if (requestedURL.startsWith("/sensor/")) {
+                int ID = Integer.parseInt(requestedURL.split("/")[2]);
+                String ServiceURI = "/" + requestedURL.split("/")[requestedURL.split("/").length - 1];
                 reply = "{\"sensor\":{";
-                for (MicazMote m : con.getMotesList()) {
+                for (IMASensor m : con.getMotesList()) {
                     if (m.getId() == ID) {
-                        reply += m.JSONLight();
-                    }
-                }
-                reply += "}}";
-
-            } else if (requestedURL.startsWith("/sensor/") && (requestedURL.contains("temp"))) {
-                int ID = Integer.parseInt(requestedURL.substring(8, requestedURL.indexOf("/", 9)));
-                con.sendReadingRequest(ID, lib.Constants.TEMP);
-                try {
-                    sleep(1000);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                reply = "{\"sensor\":{";
-                for (MicazMote m : con.getMotesList()) {
-                    if (m.getId() == ID) {
-                        reply += m.JSONTemp();
-                    }
-                }
-                reply += "}}";
-
-            } else if (requestedURL.startsWith("/sensor/") && (requestedURL.contains("switch"))) {
-                int ID = Integer.parseInt(requestedURL.substring(8, requestedURL.indexOf("/", 9)));
-                con.toggleSwitch(ID);
-                try {
-                    sleep(1000);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                reply = "{\"sensor\":{";
-                for (MicazMote m : con.getMotesList()) {
-                    if (m.getId() == ID) {
-                        reply += m.JSONObject();
+                        reply += m.RequestServiceReading(ServiceURI);
                     }
                 }
                 reply += "}}";
 
             }
+
             out.println(reply);
             out.flush();
             out.close();

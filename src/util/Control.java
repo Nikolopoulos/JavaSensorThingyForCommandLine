@@ -19,6 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.JSONObject;
 import oscilloscope.Messaging;
+import sensorPlatforms.AssociatedHardware;
 import sensorPlatforms.IMASensor;
 import sensorPlatforms.MicazMote;
 import sensorPlatforms.Service;
@@ -241,26 +242,42 @@ public class Control {
                         }
 
                     } else {
-                        for(Service s : foundSensor.getServices()){
-                            boolean foundService=false;
-                            for(Service ser : sensor.getServices()){
-                                if(ser.getName().contentEquals(s.getName())){
-                                    foundService = true;
-                                    s.setDecimalValue(ser.getDecimalValue());
-                                    if(ser.getName().contains("Bluetooth")){
-                                        if(s.getHw().containsKey(ser.getDecimalValue().split(" ")[0])){
-                                            s.getHw().put(ser, value)
-                                        }//add to hashmap the tag read
+                        //Change existing services to latest standing
+                        for (Service serviceFromFoundSensor : foundSensor.getServices()) {
+                            for (Service ser : sensor.getServices()) {
+                                if (ser.getName().contentEquals(serviceFromFoundSensor.getName())) {
+                                    serviceFromFoundSensor.setDecimalValue(ser.getDecimalValue());
+                                    if (ser.getName().contains("Bluetooth")) {
+                                        //if (!serviceFromFoundSensor.getHw().containsKey(ser.getDecimalValue().split(" ")[0])) {
+                                            serviceFromFoundSensor.getHw().put(ser.getDecimalValue().split(" ")[0], new AssociatedHardware(ser.getDecimalValue().split(" ")[0], ser.getDecimalValue().split(" ")[1]));
+                                        //} else {
+                                            //serviceFromFoundSensor.getHw().put(ser.getDecimalValue().split(" ")[0], new AssociatedHardware(ser.getDecimalValue().split(" ")[0], ser.getDecimalValue().split(" ")[1]));
+                                        //}//add to hashmap the tag read
                                     }
                                 }
                             }
                         }
+
+                        //Add missing services
+                        for (Service serviceFromReadSensor : sensor.getServices()) {
+                            boolean exists = false;
+                            for (Service ser : foundSensor.getServices()) {
+                                if (ser.getName().contentEquals(serviceFromReadSensor.getName())) {
+                                    exists = true;
+                                }
+                            }
+                            if (!exists) {
+                                foundSensor.getServices().add(serviceFromReadSensor);
+                            }
+                        }
+
                     }
                 } catch (Exception ex) {
                     Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-        });
+        }
+        );
         t.start();
     }
 
@@ -271,8 +288,10 @@ public class Control {
             public void run() {
                 try {
                     cronCore.attachTo();
+
                 } catch (Exception ex) {
-                    Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(Control.class
+                            .getName()).log(Level.SEVERE, null, ex);
                 }
                 Thread serial = messages.ReadSerial();
                 serial.start();
