@@ -6,7 +6,6 @@
 package oscilloscope;
 
 import affinitySupport.ThreadAffinity;
-import gui.mainFrame;
 import util.Control;
 import webServer.Server;
 
@@ -22,10 +21,6 @@ public class Conductor {
     public static void main(String args[]) {
         
         Control c = new Control(false);
-        if (args.length>1 && args[1].equals("debug")) {
-            mainFrame f = new mainFrame(c);
-            f.setVisible(true);
-        }
         Server myServer = new Server(c);
         myServer.startServer();
     }
