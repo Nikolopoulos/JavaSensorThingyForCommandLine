@@ -5,15 +5,14 @@
  */
 package webServer;
 
+import DecisionMaking.DecisionMaking;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import sensorPlatforms.MicazMote;
 import util.Control;
-import static java.lang.Thread.sleep;
 import sensorPlatforms.IMASensor;
 
 /**
@@ -26,9 +25,12 @@ class DoComms implements Runnable {
     private String line, input, requestedURL, noBreakInput;
     private final Control con;
 
+    private final DecisionMaking dm;
+
     DoComms(Socket server, Control c) {
         this.server = server;
         this.con = c;
+        dm = new DecisionMaking(c);
     }
 
     public void run() {
@@ -63,8 +65,7 @@ class DoComms implements Runnable {
             if (requestedURL.equals("/")) {
                 reply = con.ip + ":" + con.myPort + "/sensors -> returns a list of sensors available\n"
                         + con.ip + ":" + con.myPort + "/sensor/ID -> returns data of specific sensor with id = ID\n"
-                        + con.ip + ":" + con.myPort + "/sensor/ID/light|temp -> returns data about light|temperature of specific sensor with id = ID\n"
-                        + con.ip + ":" + con.myPort + "/sensor/ID/switch toggles the switch available on the sensor node and returns the state of the sensor node as if 127.0.0.1:8181/sensor/ID was called";
+                        + con.ip + ":" + con.myPort + "/sensor/ID/ServiceName -> returns data from ServiceName runnign on Sensor ID\n";
             } else if (requestedURL.startsWith("/sensors")) {
                 reply = "{\"sensors\":{[";
                 for (IMASensor m : con.getMotesList()) {
@@ -76,33 +77,30 @@ class DoComms implements Runnable {
                 reply += "]}";
 
             } else if (requestedURL.startsWith("/sensor/") && requestedURL.split("/").length < 4) {
-                if (requestedURL.split("/").length < 3) {
-                    reply = con.ip + ":" + con.myPort + "/sensors -> returns a list of sensors available\n"
-                            + con.ip + ":" + con.myPort + "/sensor/ID -> returns data of specific sensor with id = ID\n"
-                            + con.ip + ":" + con.myPort + "/sensor/ID/light|temp -> returns data about light|temperature of specific sensor with id = ID\n"
-                            + con.ip + ":" + con.myPort + "/sensor/ID/switch toggles the switch available on the sensor node and returns the state of the sensor node as if 127.0.0.1:8181/sensor/ID was called";
 
-                } else {
-                    int ID = Integer.parseInt(requestedURL.split("/")[2]);
-                    reply = "{\"sensor\":{";
-                    for (IMASensor m : con.getMotesList()) {
-                        if (m.getId() == ID) {
-                            reply += m.JSONObject();
-                        }
-                    }
-                    reply += "}}";
-                }
-
-            } else if (requestedURL.startsWith("/sensor/")) {
                 int ID = Integer.parseInt(requestedURL.split("/")[2]);
-                String ServiceURI = "/" + requestedURL.split("/")[requestedURL.split("/").length - 1];
                 reply = "{\"sensor\":{";
                 for (IMASensor m : con.getMotesList()) {
                     if (m.getId() == ID) {
-                        reply += m.RequestServiceReading(ServiceURI);
+                        reply += m.JSONObject();
                     }
                 }
                 reply += "}}";
+
+            } else if (requestedURL.startsWith("/sensor/")) {
+
+                reply = "{\"sensor\":{";
+                int threadID = dm.add(requestedURL);
+                String returnVal = "";
+                while (returnVal.equalsIgnoreCase("")) {
+                    returnVal = dm.getResultOf(threadID);
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(DoComms.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                reply += returnVal + "}}";
 
             }
 

@@ -7,6 +7,7 @@ package util;
 
 import affinitySupport.Core;
 import affinitySupport.ThreadAffinity;
+import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -17,6 +18,10 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.json.JSONObject;
 import oscilloscope.Messaging;
 import sensorPlatforms.AssociatedHardware;
@@ -36,7 +41,7 @@ public class Control {
     String uid = "";
     boolean debug;
     public ThreadAffinity threadAffinity;
-    public final Core encryptionCore;
+    public final Core criticalSensingCore;
     public final Core HTTPCore;
     public final Core sensingCore;
     public final Core cronCore;
@@ -61,33 +66,33 @@ public class Control {
         String jsonReply = "";
 
         if (threadAffinity.cores().length == 4) {
-            encryptionCore = threadAffinity.cores()[0];
+            criticalSensingCore = threadAffinity.cores()[0];
             HTTPCore = threadAffinity.cores()[1];
             sensingCore = threadAffinity.cores()[2];
             cronCore = threadAffinity.cores()[3];
         } else if (threadAffinity.cores().length == 2) {
-            encryptionCore = threadAffinity.cores()[0];
+            criticalSensingCore = threadAffinity.cores()[0];
             HTTPCore = threadAffinity.cores()[1];
             sensingCore = threadAffinity.cores()[1];
             cronCore = threadAffinity.cores()[0];
         } else if (threadAffinity.cores().length == 1) {
-            encryptionCore = threadAffinity.cores()[0];
+            criticalSensingCore = threadAffinity.cores()[0];
             HTTPCore = threadAffinity.cores()[0];
             sensingCore = threadAffinity.cores()[0];
             cronCore = threadAffinity.cores()[0];
         } else {
-            encryptionCore = threadAffinity.cores()[0];
+            criticalSensingCore = threadAffinity.cores()[0];
             HTTPCore = threadAffinity.cores()[0];
             sensingCore = threadAffinity.cores()[0];
             cronCore = threadAffinity.cores()[0];
         }
 
         System.out.println("Available cores: " + threadAffinity.cores().length);
-        System.out.println("encryptionCore: " + encryptionCore);
+        System.out.println("encryptionCore: " + criticalSensingCore);
         System.out.println("HTTPCore: " + HTTPCore);
         System.out.println("sensingCore: " + sensingCore);
         System.out.println("cronCore: " + cronCore);
-        encryptionCore.setC(this);
+        criticalSensingCore.setC(this);
         HTTPCore.setC(this);
         sensingCore.setC(this);
         cronCore.setC(this);
@@ -249,9 +254,9 @@ public class Control {
                                     serviceFromFoundSensor.setDecimalValue(ser.getDecimalValue());
                                     if (ser.getName().contains("Bluetooth")) {
                                         //if (!serviceFromFoundSensor.getHw().containsKey(ser.getDecimalValue().split(" ")[0])) {
-                                            serviceFromFoundSensor.getHw().put(ser.getDecimalValue().split(" ")[0], new AssociatedHardware(ser.getDecimalValue().split(" ")[0], ser.getDecimalValue().split(" ")[1]));
+                                        serviceFromFoundSensor.getHw().put(ser.getDecimalValue().split(" ")[0], new AssociatedHardware(ser.getDecimalValue().split(" ")[0], ser.getDecimalValue().split(" ")[1]));
                                         //} else {
-                                            //serviceFromFoundSensor.getHw().put(ser.getDecimalValue().split(" ")[0], new AssociatedHardware(ser.getDecimalValue().split(" ")[0], ser.getDecimalValue().split(" ")[1]));
+                                        //serviceFromFoundSensor.getHw().put(ser.getDecimalValue().split(" ")[0], new AssociatedHardware(ser.getDecimalValue().split(" ")[0], ser.getDecimalValue().split(" ")[1]));
                                         //}//add to hashmap the tag read
                                     }
                                 }
@@ -330,4 +335,24 @@ public class Control {
         return null;
     }
 
+    public static double getProcessCpuLoad() throws Exception {
+
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
+        AttributeList list = mbs.getAttributes(name, new String[]{"ProcessCpuLoad"});
+
+        if (list.isEmpty()) {
+            return Double.NaN;
+        }
+
+        Attribute att = (Attribute) list.get(0);
+        Double value = (Double) att.getValue();
+
+        // usually takes a couple of seconds before we get real values
+        if (value == -1.0) {
+            return Double.NaN;
+        }
+        // returns a percentage value with 1 decimal point precision
+        return ((int) (value * 1000) / 10.0);
+    }
 }
