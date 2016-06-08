@@ -5,6 +5,7 @@
  */
 package util;
 
+import Logging.MyLogger;
 import affinitySupport.Core;
 import affinitySupport.ThreadAffinity;
 import java.lang.management.ManagementFactory;
@@ -26,7 +27,6 @@ import org.json.JSONObject;
 import oscilloscope.Messaging;
 import sensorPlatforms.AssociatedHardware;
 import sensorPlatforms.IMASensor;
-import sensorPlatforms.MicazMote;
 import sensorPlatforms.Service;
 
 /**
@@ -58,7 +58,8 @@ public class Control {
             System.exit(1);
         }
         ip = addr.getHostAddress();
-        registryUnitIP = "127.0.0.1";
+        System.out.println("Percieved ip is "+ip+" first non loopbak is "+addr);
+        registryUnitIP = "192.168.2.5";
         registryPort = 8383;
         myPort = 8282;
         threadAffinity = new ThreadAffinity(this);
@@ -87,11 +88,11 @@ public class Control {
             cronCore = threadAffinity.cores()[0];
         }
 
-        System.out.println("Available cores: " + threadAffinity.cores().length);
-        System.out.println("encryptionCore: " + criticalSensingCore);
-        System.out.println("HTTPCore: " + HTTPCore);
-        System.out.println("sensingCore: " + sensingCore);
-        System.out.println("cronCore: " + cronCore);
+        MyLogger.log("Available cores: " + threadAffinity.cores().length);
+        MyLogger.log("encryptionCore: " + criticalSensingCore);
+        MyLogger.log("HTTPCore: " + HTTPCore);
+        MyLogger.log("sensingCore: " + sensingCore);
+        MyLogger.log("cronCore: " + cronCore);
         criticalSensingCore.setC(this);
         HTTPCore.setC(this);
         sensingCore.setC(this);
@@ -100,31 +101,31 @@ public class Control {
         try {
 
             messages = new Messaging(this);
-            jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("ip=" + ip + "&port=" + myPort + "&services={\"services\":[{\"uri\" : \"/sensors\", \"description\" : \"returns a list of sensors available\"}]}"), "/register");
+            jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("ip=" + ip + "&port=" + myPort + "&services={\"services\":[{\"uri\" : \"/sensors\", \"description\" : \"returns a list of sensors available\"}]}"), "/register",addr);
             //registers itself to the registry unit
-
+            MyLogger.log("http://" + registryUnitIP+":"+registryPort+"/register"+ URLEncoder.encode("ip=" + ip + "&port=" + myPort + "&services={\"services\":[{\"uri\" : \"/sensors\", \"description\" : \"returns a list of sensors available\"}]}"));
             if (debug) {
-                System.out.println("reply is: " + jsonReply);
+                MyLogger.log("reply is: " + jsonReply);
             }
             JSONObject obj;
-
+            MyLogger.log("Error parsing this" + jsonReply);
             obj = new JSONObject(jsonReply);
 
             if (!obj.get("result").equals("success")) {
                 if (debug) {
-                    System.out.println("jsonReply failed " + jsonReply);
+                    MyLogger.log("jsonReply failed " + jsonReply);
                 }
             } else {
                 uid = obj.getString("uid");
                 if (debug) {
-                    System.out.println("myUID is " + uid);
+                    MyLogger.log("myUID is " + uid);
                 }
             }
 
         } catch (Exception e) {
-            if (debug) {
-                System.out.println(jsonReply);
-            }
+           
+                MyLogger.log(jsonReply);
+            
             e.printStackTrace();
         }
         sensorsList = new ArrayList<IMASensor>();
@@ -146,19 +147,19 @@ public class Control {
                 }
                 ArrayList<IMASensor> toRemove = new ArrayList<IMASensor>();
                 if (debug) {
-                    System.out.println("Drop daemon started");
+                    MyLogger.log("Drop daemon started");
                 }
                 while (true) {
                     for (IMASensor m : sensorsList) {
 
                         if (m.getLatestActivity() < Util.getTime() - 10000) {
                             if (debug) {
-                                System.out.println("dropin " + m);
+                                MyLogger.log("dropin " + m);
                             }
 
                             toRemove.add(m);
                         } else if (debug) {
-                            System.out.println("Latest activity " + m.getLatestActivity());
+                            MyLogger.log("Latest activity " + m.getLatestActivity());
                         }
                     }
                     for (IMASensor m : toRemove) {
@@ -171,11 +172,11 @@ public class Control {
                             }
                             services += "]}";
                             if (debug) {
-                                System.out.println("My uid at update is " + uid);
+                                MyLogger.log("My uid at update is " + uid);
                             }
-                            String jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/delete");
+                            String jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/delete",addr);
                             if (debug) {
-                                System.out.println("reply is: " + jsonReply);
+                                MyLogger.log("reply is: " + jsonReply);
                             }
                             JSONObject obj;
 
@@ -188,7 +189,7 @@ public class Control {
                     }
                     toRemove.clear();
                     if (debug) {
-                        //System.out.println("CurrentTime " + Util.getTime());
+                        //MyLogger.log("CurrentTime " + Util.getTime());
                     }
                     try {
                         Thread.sleep(2000);
@@ -221,7 +222,7 @@ public class Control {
                     }
                     if (!found) {
                         sensorsList.add(sensor);
-                        String jsonReply;
+                        String jsonReply="";
                         if (uid.length() > 0) {
                             try {
                                 String services = "{\"services\":[";
@@ -232,17 +233,19 @@ public class Control {
                                 }
                                 services += "]}";
                                 if (debug) {
-                                    System.out.println("My uid at update is " + uid);
+                                    MyLogger.log("My uid at update is " + uid);
                                 }
-                                jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/update");
+                                jsonReply = HTTPRequest.sendPost("http://" + registryUnitIP, registryPort, URLEncoder.encode("uid=" + uid + "&services=" + services), "/update",addr);
                                 if (debug) {
-                                    System.out.println("reply is: " + jsonReply);
+                                    MyLogger.log("reply is: " + jsonReply);
                                 }
                                 JSONObject obj;
 
+                                MyLogger.log("Error parsing this" + jsonReply);
                                 obj = new JSONObject(jsonReply);
                             } catch (Exception ex) {
                                 Logger.getLogger(Control.class.getName()).log(Level.SEVERE, null, ex);
+                                MyLogger.log("Error parsing this" + jsonReply);
                             }
                         }
 

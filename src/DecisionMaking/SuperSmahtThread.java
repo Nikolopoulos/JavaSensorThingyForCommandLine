@@ -94,7 +94,7 @@ public class SuperSmahtThread implements Runnable {
         String ServiceURI = "/" + ServiceArguements.split("/")[ServiceArguements.split("/").length - 1];
         for (IMASensor m : this.c.getMotesList()) {
             if (m.getId() == ID) {
-                sirh += m.RequestServiceReading(ServiceURI);
+                sirh += m.RequestServiceReading(ServiceURI.split("\\?")[0]);
                 break;
             }
         }

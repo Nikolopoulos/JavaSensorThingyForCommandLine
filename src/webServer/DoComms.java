@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import util.Control;
 import sensorPlatforms.IMASensor;
+import Logging.MyLogger;
 
 /**
  *
@@ -52,7 +53,7 @@ class DoComms implements Runnable {
                 if (lineNumber == 1) {
                     String[] parts = line.split(" ");
                     requestedURL = parts[1];
-                    System.out.println("REQURL IS " + requestedURL);
+                    MyLogger.log("REQURL IS " + requestedURL);
                 }
                 input = input + line + "\n";
                 noBreakInput = noBreakInput + line;
@@ -60,7 +61,7 @@ class DoComms implements Runnable {
             }
             String reply = "";
             for (String part : requestedURL.split("/")) {
-                System.out.println(part + " " + requestedURL.split("/").length);
+                MyLogger.log(part + " " + requestedURL.split("/").length);
             }
             if (requestedURL.equals("/")) {
                 reply = con.ip + ":" + con.myPort + "/sensors -> returns a list of sensors available\n"
@@ -75,6 +76,9 @@ class DoComms implements Runnable {
                     reply = reply.substring(0, reply.length() - 1);
                 }
                 reply += "]}";
+
+            }else if (requestedURL.startsWith("/log")) {
+                reply = MyLogger.readLog();
 
             } else if (requestedURL.startsWith("/sensor/") && requestedURL.split("/").length < 4) {
 
@@ -109,7 +113,7 @@ class DoComms implements Runnable {
             out.close();
             server.close();
         } catch (IOException ioe) {
-            System.out.println("IOException on socket listen: " + ioe);
+            MyLogger.log("IOException on socket listen: " + ioe);
             ioe.printStackTrace();
         }
     }

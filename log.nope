@@ -1,0 +1,10 @@
+[Wed Jun 08 12:13:12 UTC 2016]:  Available cores: 4
+[Wed Jun 08 12:13:12 UTC 2016]:  encryptionCore: Core[#0]
+[Wed Jun 08 12:13:12 UTC 2016]:  HTTPCore: Core[#1]
+[Wed Jun 08 12:13:12 UTC 2016]:  sensingCore: Core[#2]
+[Wed Jun 08 12:13:12 UTC 2016]:  cronCore: Core[#3]
+[Wed Jun 08 12:13:12 UTC 2016]:  http://192.168.2.5:8383/registerip%3D192.168.2.7%26port%3D8282%26services%3D%7B%22services%22%3A%5B%7B%22uri%22+%3A+%22%2Fsensors%22%2C+%22description%22+%3A+%22returns+a+list+of+sensors+available%22%7D%5D%7D
+[Wed Jun 08 12:13:12 UTC 2016]:  Error parsing this{}
+[Wed Jun 08 12:13:12 UTC 2016]:  {}
+[Wed Jun 08 12:13:12 UTC 2016]:  Server started!
+[Wed Jun 08 12:13:13 UTC 2016]:  Server attached!

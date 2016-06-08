@@ -53,7 +53,7 @@ public class ServiceEstimation {
     }
     
     private void computeCL(){
-        String[] parametersSplit = serviceArguements.split("?");
+        String[] parametersSplit = serviceArguements.split("\\?");
         if(parametersSplit.length<2){
             clEstimation = 0;
         }

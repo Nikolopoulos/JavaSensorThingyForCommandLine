@@ -51,7 +51,7 @@ public class Messaging {
                             try {
                                 if (s.charAt(0) != '#') {
                                     parseString(s);
-                                    //System.out.println(s);
+                                    //MyLogger.log(s);
 
                                 }
                                 s = br.readLine();

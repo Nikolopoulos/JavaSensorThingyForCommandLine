@@ -5,6 +5,7 @@
  */
 package webServer;
 
+import Logging.MyLogger;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -37,7 +38,7 @@ public class Server {
                 try {
                     try {
                         finalControl.HTTPCore.attachTo();
-                        System.out.println("Server attached!");
+                        MyLogger.log("Server attached!");
                     } catch (Exception ex) {
                         Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -46,7 +47,7 @@ public class Server {
                     Socket server;
                     while ((i++ < maxConnections) || (maxConnections == 0)) {
                         server = listener.accept();
-                        System.out.println("Server Accepted!!");
+                        MyLogger.log("Server Accepted!!");
                         DoComms conn_c = new DoComms(server, finalControl);
                         Thread clientConnectionThread = new Thread(conn_c);
                         clientConnectionThread.setName("clientConnectionThread" + i);
@@ -54,13 +55,13 @@ public class Server {
                     }
 
                 } catch (IOException ioe) {
-                    System.out.println("IOException on socket listen: " + ioe);
+                    MyLogger.log("IOException on socket listen: " + ioe);
                     ioe.printStackTrace();
                 }
             }
         });
         serverThread.start();
-        System.out.println("Server started!");
+        MyLogger.log("Server started!");
     }
 
 }
